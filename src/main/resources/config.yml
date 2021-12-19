@@ -1,2 +1,13 @@
-DiscordToken: 'token'
 LobbyIP: 'lo.7mi.site'
+
+DiscordToken: 'token'
+DiscordGuildId: '810725404545515561'
+
+DiscordVerifyUserRoleID: '810744661366407219'
+
+MySQLServer: 'mysql'
+MySQLPort: 3306
+MySQLDatabase: ''
+MySQLOption: '?allowPublicKeyRetrieval=true&useSSL=false'
+MySQLUsername: ''
+MySQLPassword: ''

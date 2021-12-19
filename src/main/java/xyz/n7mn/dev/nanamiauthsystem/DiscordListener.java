@@ -54,7 +54,7 @@ public class DiscordListener extends ListenerAdapter {
         EmbedBuilder builder = new EmbedBuilder();
         builder.setTitle("ななみ鯖 認証");
         builder.setColor(Color.PINK);
-        builder.setThumbnail("https://7mi.site/7m/icon.png");
+        builder.setThumbnail("https://7.4096.xyz/7m/icon.png");
         if (raw.toLowerCase().startsWith("7m.verify") || raw.toLowerCase().startsWith("7m.vy")){
 
             try {
@@ -73,7 +73,7 @@ public class DiscordListener extends ListenerAdapter {
                         "「`"+plugin.getConfig().getString("LobbyIP")+"`」に入り\n" +
                         "以下の文字列を入力してください。\n" +
                         "\n" +
-                        "||vy."+token+"||\n" +
+                        "`vy."+token+"`\n" +
                         "(5分経ってしまった場合は最初からやり直してください。)"
                 );
 

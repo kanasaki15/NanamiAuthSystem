@@ -2,6 +2,10 @@ package xyz.n7mn.dev.nanamiauthsystem;
 
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Role;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import org.bukkit.ChatColor;
@@ -11,17 +15,21 @@ import org.bukkit.event.Listener;
 import org.bukkit.plugin.Plugin;
 
 import java.awt.*;
+import java.sql.*;
+import java.util.*;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.List;
 
 public class MinecraftListener implements Listener {
 
     private HashMap<String, TokenData> tokenList;
     private final Plugin plugin;
+    private final JDA jda;
 
-    public MinecraftListener(Plugin plugin, HashMap<String, TokenData> tokenList) {
+    public MinecraftListener(Plugin plugin, HashMap<String, TokenData> tokenList, JDA jda) {
         this.tokenList = tokenList;
         this.plugin = plugin;
+        this.jda = jda;
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -37,12 +45,12 @@ public class MinecraftListener implements Listener {
         EmbedBuilder builder = new EmbedBuilder();
         builder.setTitle("ななみ鯖 認証");
         builder.setColor(Color.PINK);
-        builder.setThumbnail("https://7mi.site/7m/icon.png");
+        builder.setThumbnail("https://7.4096.xyz/7m/icon.png");
 
         String key = chatText.replaceAll("vy.", "");
         TokenData data = tokenList.get(key);
         if (data == null){
-            e.getPlayer().sendMessage(Component.text(ChatColor.RED + "文字列が間違っています。"));
+            e.getPlayer().sendMessage(Component.text(ChatColor.RED + "文字列が間違っています！"));
             return;
         }
 
@@ -56,11 +64,134 @@ public class MinecraftListener implements Listener {
             data.getMessage().editMessageEmbeds(builder.build()).queue(m -> {
                 m.addReaction("\uD83D\uDEAB").queue();
             });
+            e.getPlayer().sendMessage(Component.text(ChatColor.RED+"最初からやり直してください！"));
             return;
         }
 
-        //TODO MySQL追加処理
+
         String permName = ""; // 認証レベル
+
+        /* 近々 MySQL鯖に直接読み込みに行くのではなくてAPI経由にしたいよね～ */
+        // おまじない (MySQL)
+        try {
+            boolean found = false;
+            Enumeration<Driver> drivers = DriverManager.getDrivers();
+
+            while (drivers.hasMoreElements()) {
+                Driver driver = drivers.nextElement();
+                if (driver.equals(new com.mysql.cj.jdbc.Driver())) {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
+                DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver());
+            }
+        } catch (SQLException ex){
+            ex.printStackTrace();
+        }
+
+        // 権限レベル順に持ってくる
+        List<String> roleList = new ArrayList<>();
+        try {
+            Connection con = DriverManager.getConnection("jdbc:mysql://" + plugin.getConfig().getString("MySQLServer") + ":" + plugin.getConfig().getInt("MySQLPort") + "/" + plugin.getConfig().getString("MySQLDatabase") + plugin.getConfig().getString("MySQLOption"), plugin.getConfig().getString("MySQLUsername"), plugin.getConfig().getString("MySQLPassword"));
+            PreparedStatement statement = con.prepareStatement("SELECT * FROM RoleList ORDER BY RoleRank DESC");
+            ResultSet set = statement.executeQuery();
+            while (set.next()) {
+                roleList.add(set.getString("DiscordRoleID")+","+set.getString("RoleDisplayName"));
+            }
+            set.close();
+            statement.close();
+            con.close();
+        } catch (SQLException ex){
+            ex.printStackTrace();
+        }
+
+        String roleId = ""; // あとで使う
+        // Discord側ロール取得
+        Guild guild = jda.getGuildById(plugin.getConfig().getString("DiscordGuildId"));
+        if (guild != null){
+            Member member = guild.getMemberById(data.getUserId());
+            if (member == null){
+                return;
+            }
+
+            List<Role> list = member.getRoles();
+            for (Role role : list){
+                boolean isfound = false;
+                for (String r : roleList){
+                    String[] split = r.split(",");
+                    if (role.getId().equals(split[0])){
+                        permName = split[1];
+                        roleId = role.getId();
+                        isfound = true;
+                        break;
+                    }
+                }
+                if (isfound){
+                    break;
+                }
+            }
+        }
+
+        // 改めて認証ロールつける
+        if (roleId.equals("")){
+            roleId = plugin.getConfig().getString("DiscordVerifyUserRoleID");
+            Role role = guild.getRoleById(roleId);
+            if (role == null){
+                return;
+            }
+            Member member = guild.getMemberById(data.getUserId());
+            if (member == null) {
+                return;
+            }
+
+            guild.addRoleToMember(member, role).queue();
+        }
+
+        // MySQLに書き出し
+        String finalRoleId = roleId;
+        try {
+            Connection con = DriverManager.getConnection("jdbc:mysql://" + plugin.getConfig().getString("MySQLServer") + ":" + plugin.getConfig().getInt("MySQLPort") + "/" + plugin.getConfig().getString("MySQLDatabase") + plugin.getConfig().getString("MySQLOption"), plugin.getConfig().getString("MySQLUsername"), plugin.getConfig().getString("MySQLPassword"));
+            PreparedStatement statement = con.prepareStatement("SELECT * FROM UserList WHERE MinecraftUserID = ? AND Active = 1");
+            statement.setString(1, e.getPlayer().getUniqueId().toString());
+            ResultSet set = statement.executeQuery();
+            if (set.next()){
+                set.close();
+                statement.close();
+                con.close();
+
+                builder.setDescription("このMinecraftIDは認証済みです。");
+                data.getMessage().editMessageEmbeds(builder.build()).queue(m -> {
+                    m.addReaction("\uD83D\uDEAB").queue();
+                });
+
+                e.getPlayer().sendMessage(Component.text(ChatColor.RED+"すでに認証が済んでいます！"));
+                return;
+            }
+            set.close();
+            statement.close();
+
+            new Thread(()->{
+                try {
+                    PreparedStatement statement1 = con.prepareStatement("INSERT INTO `UserList`(`UUID`, `DiscordUserID`, `MinecraftUserID`, `RoleUUID`, `VerifyDate`, `Active`) VALUES (?,?,?,?,?,?)");
+                    statement1.setString(1, UUID.randomUUID().toString());
+                    statement1.setString(2, data.getUserId());
+                    statement1.setString(3, e.getPlayer().getUniqueId().toString());
+                    statement1.setString(4, finalRoleId);
+                    statement1.setTimestamp(5, new Timestamp(new Date().getTime()));
+                    statement1.setBoolean(6, true);
+                    statement1.execute();
+                    statement1.close();
+                    con.close();
+                } catch (SQLException ex){
+                    ex.printStackTrace();
+                }
+            }).start();
+        } catch (SQLException ex){
+            ex.printStackTrace();
+        }
 
         builder.setDescription("" +
                 "認証が成功しました！\n" +
