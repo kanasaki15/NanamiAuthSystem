@@ -65,6 +65,8 @@ public class MinecraftListener implements Listener {
                 m.addReaction("\uD83D\uDEAB").queue();
             });
             e.getPlayer().sendMessage(Component.text(ChatColor.RED+"最初からやり直してください！"));
+            data.getMessage().getGuild().getRolesByName("auth"+data.getUserId(), false).get(0).delete().queue();
+            data.getMessage().getGuild().getTextChannelById(data.getChannelId()).delete().queue();
             return;
         }
 
@@ -114,6 +116,8 @@ public class MinecraftListener implements Listener {
         if (guild != null){
             Member member = guild.getMemberById(data.getUserId());
             if (member == null){
+                data.getMessage().getGuild().getRolesByName("auth"+data.getUserId(), false).get(0).delete().queue();
+                data.getMessage().getGuild().getTextChannelById(data.getChannelId()).delete().queue();
                 return;
             }
 
@@ -167,6 +171,8 @@ public class MinecraftListener implements Listener {
                     m.addReaction("\uD83D\uDEAB").queue();
                 });
 
+                data.getMessage().getGuild().getRolesByName("auth"+data.getUserId(), false).get(0).delete().queue();
+                data.getMessage().getGuild().getTextChannelById(data.getChannelId()).delete().queue();
                 e.getPlayer().sendMessage(Component.text(ChatColor.RED+"すでに認証が済んでいます！"));
                 return;
             }
@@ -203,6 +209,8 @@ public class MinecraftListener implements Listener {
             m.addReaction("\u2705").queue();
         });
 
+        data.getMessage().getGuild().getRolesByName("auth"+data.getUserId(), false).get(0).delete().queue();
+        data.getMessage().getGuild().getTextChannelById(data.getChannelId()).delete().queue();
         tokenList.remove(key);
         e.getPlayer().sendMessage(Component.text(""+
                 ChatColor.GREEN + "認証に成功しました！\n" +

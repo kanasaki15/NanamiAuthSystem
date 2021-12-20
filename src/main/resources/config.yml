@@ -4,6 +4,7 @@ DiscordToken: 'token'
 DiscordGuildId: '810725404545515561'
 
 DiscordVerifyUserRoleID: '810744661366407219'
+DiscordVerifyCategoryID: '922217386013233242'
 
 MySQLServer: 'mysql'
 MySQLPort: 3306

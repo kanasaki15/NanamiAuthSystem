@@ -55,8 +55,7 @@ public class DiscordListener extends ListenerAdapter {
         builder.setTitle("ななみ鯖 認証");
         builder.setColor(Color.PINK);
         builder.setThumbnail("https://7.4096.xyz/7m/icon.png");
-        if (raw.toLowerCase().startsWith("7m.verify") || raw.toLowerCase().startsWith("7m.vy")){
-
+        if (event.getMessage().getGuild().getId().equals("810725404545515561") && (raw.toLowerCase().startsWith("7m.verify") || raw.toLowerCase().startsWith("7m.vy"))){
             try {
                 MessageDigest instance = MessageDigest.getInstance("SHA-256");
                 String str = UUID.randomUUID() + " " + new SecureRandom().nextInt() + " " + event.getMessage().getId();
@@ -69,6 +68,9 @@ public class DiscordListener extends ListenerAdapter {
 
                 int i = new SecureRandom().nextInt(sb.length() - 5);
                 String token = sb.substring(i, i + 5);
+
+                // チャンネル・ロール作成
+                String mapName = "auth"+event.getAuthor().getId();
                 builder.setDescription("" +
                         "「`"+plugin.getConfig().getString("LobbyIP")+"`」に入り\n" +
                         "以下の文字列を入力してください。\n" +
@@ -77,14 +79,26 @@ public class DiscordListener extends ListenerAdapter {
                         "(5分経ってしまった場合は最初からやり直してください。)"
                 );
 
-                event.getMessage().replyEmbeds(builder.build()).queue(send -> {
-                    tokenList.put(token, new TokenData(token, send, new Date(), event.getAuthor().getId()));
+                event.getGuild().createRole().setName(mapName).queue(role -> {
+                    event.getGuild().addRoleToMember(event.getAuthor().getId(), role).queue();
+                    event.getGuild().createTextChannel(mapName, event.getGuild().getCategoryById(plugin.getConfig().getString("DiscordVerifyCategoryID"))).syncPermissionOverrides().addRolePermissionOverride(role.getIdLong(), 68672, 0).queue((channel->{
+                        channel.sendMessage(event.getAuthor().getAsMention()).setEmbeds(builder.build()).queue();
+                        event.getMessage().reply(channel.getAsMention() + " に進んで指示に従ってください。").queue(m -> {
+                            tokenList.put(token, new TokenData(token, m, new Date(), event.getAuthor().getId(), channel.getId()));
+                        });
+
+                    }));
                 });
+
+
             } catch (Exception e) {
                 e.printStackTrace();
                 builder.setDescription("なにやらエラーが発生したようです。");
                 event.getMessage().replyEmbeds(builder.build()).queue();
             }
+
+
+
         }
     }
 }

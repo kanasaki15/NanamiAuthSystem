@@ -9,12 +9,14 @@ public class TokenData {
     private Message message;
     private Date date;
     private String userId;
+    private String channelId;
 
-    public TokenData(String token, Message message, Date date, String userId){
+    public TokenData(String token, Message message, Date date, String userId, String channelId){
         this.token = token;
         this.message = message;
         this.date = date;
         this.userId = userId;
+        this.channelId = channelId;
     }
 
     public String getToken() {
@@ -47,5 +49,13 @@ public class TokenData {
 
     public void setUserId(String userId) {
         this.userId = userId;
+    }
+
+    public String getChannelId() {
+        return channelId;
+    }
+
+    public void setChannelId(String channelId) {
+        this.channelId = channelId;
     }
 }
