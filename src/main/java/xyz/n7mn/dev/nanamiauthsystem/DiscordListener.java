@@ -162,6 +162,7 @@ public class DiscordListener extends ListenerAdapter {
 
                         builder.setDescription("同期終了しました。 (" + i + " 件)");
                         builder.setFooter(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+                        builder.setColor(Color.PINK);
                         channel.sendMessageEmbeds(builder.build()).queue();
 
                         set.close();
@@ -185,17 +186,20 @@ public class DiscordListener extends ListenerAdapter {
 
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
+        boolean isBot = false;
         if (event.isWebhookMessage() && event.getAuthor().isSystem() && event.getAuthor().isBot() && event.getMessage().isFromType(ChannelType.PRIVATE)){
-            return;
+            isBot = true;
         }
 
         String raw = event.getMessage().getContentRaw();
-
         EmbedBuilder builder = new EmbedBuilder();
-        builder.setTitle("ななみ鯖 認証");
-        builder.setColor(Color.PINK);
-        builder.setThumbnail("https://7.4096.xyz/7m/icon.png");
-        if (event.getMessage().getGuild().getId().equals("810725404545515561") && (raw.toLowerCase().startsWith("7m.verify") || raw.toLowerCase().startsWith("7m.vy"))){
+
+        if (!isBot && event.getMessage().getGuild().getId().equals("810725404545515561") && (raw.toLowerCase().startsWith("7m.verify") || raw.toLowerCase().startsWith("7m.vy"))){
+
+            builder.setTitle("ななみ鯖 認証");
+            builder.setColor(Color.PINK);
+            builder.setThumbnail("https://7.4096.xyz/7m/icon.png");
+
             try {
                 MessageDigest instance = MessageDigest.getInstance("SHA-256");
                 String str = UUID.randomUUID() + " " + new SecureRandom().nextInt() + " " + event.getMessage().getId();
@@ -230,15 +234,212 @@ public class DiscordListener extends ListenerAdapter {
                     }));
                 });
 
-
             } catch (Exception e) {
                 e.printStackTrace();
                 builder.setDescription("なにやらエラーが発生したようです。");
                 event.getMessage().replyEmbeds(builder.build()).queue();
             }
 
+            return;
+        }
+
+        if (!isBot && raw.toLowerCase().equals("7m.help")){
+            builder.setTitle("ななぼっと ヘルプ");
+            builder.setColor(Color.PINK);
+            builder.setDescription("""
+                    ※未実装は隠し中。
+                    ||`7m.sync` -- 強制的に同期する(運営用)
+                    `7m.new <DiscordID> <MinecraftID>` -- 強制的に連携する (運営用)||
+                    `7m.check` -- 自分の認証情報をチェックする
+                    `7m.opc` -- ななみ鯖運営一覧
+                    `7m.help` -- いまのこれ。
+                    """
+            );
+
+            event.getMessage().replyEmbeds(builder.build()).queue();
+
+            return;
+        }
+
+        if (raw.toLowerCase().equals("7m.opc")){
+            builder.setTitle("ななみ鯖　運営人数");
+            builder.setColor(Color.PINK);
+            builder.setDescription("いま数えていますっ！しばらくまってて！");
+            event.getMessage().replyEmbeds(builder.build()).queue(m -> {
+                try {
+                    Connection con = DriverManager.getConnection("jdbc:mysql://" + plugin.getConfig().getString("MySQLServer") + ":" + plugin.getConfig().getInt("MySQLPort") + "/" + plugin.getConfig().getString("MySQLDatabase") + plugin.getConfig().getString("MySQLOption"), plugin.getConfig().getString("MySQLUsername"), plugin.getConfig().getString("MySQLPassword"));
+                    PreparedStatement statement = con.prepareStatement("SELECT DiscordUserID, RoleName, RoleRank FROM UserList, RoleList WHERE UserList.Active = 1 AND UserList.RoleUUID = RoleList.UUID AND (RoleName = 'Admin' or RoleName = 'Moderator' or RoleName = 'Developer' or RoleName = 'SvModerator') GROUP BY DiscordUserID, RoleName, RoleRank ORDER BY RoleRank DESC ");
+                    ResultSet set = statement.executeQuery();
+                    int playerCount = 0;
+                    int adminCount = 0;
+                    int moderatorCount = 0;
+                    int developerCount = 0;
+                    int svModeratorCount = 0;
+                    while (set.next()){
+
+                        boolean skip = false;
+                        String userID = set.getString("DiscordUserID");
+                        if (event.getGuild().getMemberById(userID).getRoles() != null){
+                            for (Role role : event.getGuild().getMemberById(userID).getRoles()){
+                                if (role.getName().equals("サブ垢")){
+                                    skip = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (skip){
+                            continue;
+                        }
+
+                        playerCount++;
+
+                        if (set.getString("RoleName").equals("Admin")){
+                            adminCount++;
+                            continue;
+                        }
+
+                        if (set.getString("RoleName").equals("Moderator")){
+                            moderatorCount++;
+                            continue;
+                        }
+
+                        if (set.getString("RoleName").equals("Developer")){
+                            developerCount++;
+                            continue;
+                        }
+
+                        if (set.getString("RoleName").equals("SvModerator")){
+                            svModeratorCount++;
+                        }
+                    }
+                    set.close();
+                    statement.close();
+                    con.close();
+
+                    builder.setDescription("" +
+                            "管理者(Admin) : "+adminCount+" 人\n" +
+                            "管理補助(Moderator) : "+moderatorCount+" 人\n" +
+                            "開発者(Developer) : "+developerCount+" 人\n" +
+                            "生活鯖管理補助(生活Moderator) : "+svModeratorCount+" 人\n" +
+                            "\n" +
+                            "総勢 : "+playerCount+" 人ですっ"
+                    );
+
+                    m.editMessageEmbeds(builder.build()).queue();
+
+                } catch (SQLException ex){
+                    ex.printStackTrace();
+                }
+            });
+
+            return;
+        }
 
 
+        if (!isBot && raw.toLowerCase().equals("7m.check")){
+            String fromUserId = event.getMessage().getAuthor().getId();
+            String text = event.getMessage().getContentRaw();
+
+            new Thread(()->{
+                builder.setTitle("ユーザー情報");
+                builder.setColor(Color.PINK);
+                builder.setDescription("検索中♪");
+                event.getMessage().replyEmbeds(builder.build()).queue(m -> {
+                    boolean isAdmin = false;
+
+                    try {
+                        boolean found = false;
+                        Enumeration<Driver> drivers = DriverManager.getDrivers();
+
+                        while (drivers.hasMoreElements()) {
+                            Driver driver = drivers.nextElement();
+                            if (driver.equals(new com.mysql.cj.jdbc.Driver())) {
+                                found = true;
+                                break;
+                            }
+                        }
+
+                        if (!found) {
+                            DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver());
+                        }
+
+                        Connection con = DriverManager.getConnection("jdbc:mysql://" + plugin.getConfig().getString("MySQLServer") + ":" + plugin.getConfig().getInt("MySQLPort") + "/" + plugin.getConfig().getString("MySQLDatabase") + plugin.getConfig().getString("MySQLOption"), plugin.getConfig().getString("MySQLUsername"), plugin.getConfig().getString("MySQLPassword"));
+                        PreparedStatement statement = con.prepareStatement("SELECT RoleName FROM UserList, RoleList WHERE UserList.Active = 1 AND UserList.RoleUUID = RoleList.UUID AND (RoleName = 'Admin' or RoleName = 'Moderator') AND DiscordUserID = ?");
+                        statement.setString(1, fromUserId);
+                        ResultSet set = statement.executeQuery();
+
+                        if (set.next()){
+                            isAdmin = true;
+                        }
+
+                        set.close();
+                        statement.close();
+                        con.close();
+
+                        String[] s = text.split(" ");
+                        if (!text.equals("7m.check") && !isAdmin){
+                            builder.setColor(Color.RED);
+                            builder.setDescription("権限がありませんっ！");
+                            m.editMessageEmbeds(builder.build()).queue();
+                            return;
+                        }
+
+                        if (text.equals("7m.check")){
+                            Connection con1 = DriverManager.getConnection("jdbc:mysql://" + plugin.getConfig().getString("MySQLServer") + ":" + plugin.getConfig().getInt("MySQLPort") + "/" + plugin.getConfig().getString("MySQLDatabase") + plugin.getConfig().getString("MySQLOption"), plugin.getConfig().getString("MySQLUsername"), plugin.getConfig().getString("MySQLPassword"));
+                            PreparedStatement statement1 = con1.prepareStatement("SELECT MinecraftUserID, RoleDisplayName FROM UserList, RoleList WHERE UserList.Active = 1 AND UserList.RoleUUID = RoleList.UUID AND DiscordUserID = ?");
+                            statement1.setString(1, fromUserId);
+                            ResultSet set1 = statement1.executeQuery();
+                            if (set1.next()){
+                                builder.setDescription("" +
+                                        "あなたの情報は以下のとおりですっ！\n" +
+                                        "MinecraftUUID : ||"+set1.getString("MinecraftUserID")+"||\n" +
+                                        "権限 : " + set1.getString("RoleDisplayName")
+                                );
+
+                                m.editMessageEmbeds(builder.build()).queue();
+                                set1.close();
+                                statement1.close();
+                                con1.close();
+                                return;
+                            } else {
+                                builder.setDescription("" +
+                                        "あなたは認証していませんっ！"
+                                );
+
+                                m.editMessageEmbeds(builder.build()).queue();
+                            }
+                            set1.close();
+                            statement1.close();
+                            con1.close();
+                            return;
+                        }
+
+                        System.out.println(3);
+                        String discordId = s[1];
+
+                        Guild guildById = event.getJDA().getGuildById(plugin.getConfig().getString("DiscordGuildId"));
+                        Member member = guildById.getMemberById(discordId);
+
+                        if (member == null){
+                            for (Member me : guildById.getMembers()){
+                                if (me.getNickname() != null && me.getNickname().startsWith(discordId)){
+                                    discordId = me.getId();
+                                    break;
+                                }
+
+                                if (me.getUser().getName().startsWith(discordId)){
+                                    discordId = me.getId();
+                                    break;
+                                }
+                            }
+                        }
+
+                    } catch (SQLException ex){
+                        ex.printStackTrace();
+                    }
+                });
+            }).start();
         }
     }
 }
