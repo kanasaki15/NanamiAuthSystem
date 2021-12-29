@@ -181,15 +181,26 @@ public class MinecraftListener implements Listener {
 
             new Thread(()->{
                 try {
-                    PreparedStatement statement1 = con.prepareStatement("INSERT INTO `UserList`(`UUID`, `DiscordUserID`, `MinecraftUserID`, `RoleUUID`, `VerifyDate`, `Active`) VALUES (?,?,?,?,?,?)");
-                    statement1.setString(1, UUID.randomUUID().toString());
-                    statement1.setString(2, data.getUserId());
-                    statement1.setString(3, e.getPlayer().getUniqueId().toString());
-                    statement1.setString(4, finalRoleId);
-                    statement1.setTimestamp(5, new Timestamp(new Date().getTime()));
-                    statement1.setBoolean(6, true);
-                    statement1.execute();
+
+                    String role = "";
+                    PreparedStatement statement1 = con.prepareStatement("SELECT * FROM `RoleList` WHERE DiscordRoleID = ?");
+                    statement1.setString(1, finalRoleId);
+                    ResultSet query = statement1.executeQuery();
+                    if (query.next()){
+                        role = query.getString("UUID");
+                    }
+                    query.close();
                     statement1.close();
+
+                    PreparedStatement statement2 = con.prepareStatement("INSERT INTO `UserList`(`UUID`, `DiscordUserID`, `MinecraftUserID`, `RoleUUID`, `VerifyDate`, `Active`) VALUES (?,?,?,?,?,?)");
+                    statement2.setString(1, UUID.randomUUID().toString());
+                    statement2.setString(2, data.getUserId());
+                    statement2.setString(3, e.getPlayer().getUniqueId().toString());
+                    statement2.setString(4, role);
+                    statement2.setTimestamp(5, new Timestamp(new Date().getTime()));
+                    statement2.setBoolean(6, true);
+                    statement2.execute();
+                    statement2.close();
                     con.close();
                 } catch (SQLException ex){
                     ex.printStackTrace();
