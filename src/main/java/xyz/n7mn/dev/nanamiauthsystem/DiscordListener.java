@@ -216,8 +216,8 @@ public class DiscordListener extends ListenerAdapter {
                 // チャンネル・ロール作成
                 String mapName = "auth"+event.getAuthor().getId();
                 builder.setDescription("" +
-                        "「`"+plugin.getConfig().getString("LobbyIP")+"`」に入り\n" +
-                        "以下の文字列を入力してください。\n" +
+                        "1.Minecraftで「`"+plugin.getConfig().getString("LobbyIP")+"`」に入る\n" +
+                        "2.以下の文字列をMinecraftのチャットで入力をする。\n" +
                         "\n" +
                         "`vy."+token+"`\n" +
                         "(5分経ってしまった場合は最初からやり直してください。)"
