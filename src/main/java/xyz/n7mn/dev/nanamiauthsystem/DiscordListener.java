@@ -216,7 +216,7 @@ public class DiscordListener extends ListenerAdapter {
                 // チャンネル・ロール作成
                 String mapName = "auth"+event.getAuthor().getId();
                 builder.setDescription("" +
-                        "1.Minecraft Javaでは「`"+plugin.getConfig().getString("LobbyIP")+"`」" +
+                        "1.Minecraft Javaでは「`"+plugin.getConfig().getString("LobbyIP")+"`」\n" +
                         "  Minecraft Bedrockでは「`"+plugin.getConfig().getString("LobbyBEIP")+"`」に入る\n" +
                         "2.以下の文字列をMinecraftのチャットで入力をする。\n" +
                         "\n" +
