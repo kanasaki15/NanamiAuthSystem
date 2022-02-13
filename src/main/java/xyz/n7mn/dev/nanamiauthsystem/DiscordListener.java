@@ -224,6 +224,10 @@ public class DiscordListener extends ListenerAdapter {
                         "(5分経ってしまった場合は最初からやり直してください。)"
                 );
 
+                if (event.getGuild().getRolesByName(mapName, true).size() > 0){
+                    return;
+                }
+
                 event.getGuild().createRole().setName(mapName).queue(role -> {
                     event.getGuild().addRoleToMember(event.getAuthor().getId(), role).queue();
                     event.getGuild().createTextChannel(mapName, event.getGuild().getCategoryById(plugin.getConfig().getString("DiscordVerifyCategoryID"))).syncPermissionOverrides().addRolePermissionOverride(role.getIdLong(), 68672, 0).queue((channel->{
