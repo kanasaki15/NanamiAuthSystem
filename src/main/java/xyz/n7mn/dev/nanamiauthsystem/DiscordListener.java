@@ -346,9 +346,9 @@ public class DiscordListener extends ListenerAdapter {
                             );
 
                             m.editMessageEmbeds(builder.build()).queue();
-                            set1.close();
-                            statement1.close();
-                            con1.close();
+                            //set1.close();
+                            //statement1.close();
+                            //con1.close();
                             return;
                         }
 
