@@ -312,25 +312,40 @@ public class DiscordListener extends ListenerAdapter {
                             PreparedStatement statement1 = con1.prepareStatement("SELECT MinecraftUserID, RoleDisplayName FROM UserList, RoleList WHERE UserList.Active = 1 AND UserList.RoleUUID = RoleList.UUID AND DiscordUserID = ?");
                             statement1.setString(1, fromUserId);
                             ResultSet set1 = statement1.executeQuery();
-                            if (set1.next()){
-                                builder.setDescription("" +
-                                        "あなたの情報は以下のとおりですっ！\n" +
-                                        "MinecraftUUID : ||"+set1.getString("MinecraftUserID")+"||\n" +
-                                        "権限 : " + set1.getString("RoleDisplayName")
-                                );
 
-                                m.editMessageEmbeds(builder.build()).queue();
-                                set1.close();
-                                statement1.close();
-                                con1.close();
-                                return;
-                            } else {
-                                builder.setDescription("" +
-                                        "あなたは認証していませんっ！"
-                                );
+                            StringBuilder sb = new StringBuilder();
 
-                                m.editMessageEmbeds(builder.build()).queue();
+
+                            String name = "";
+                            while (set1.next()){
+                                if (set1.isFirst()){
+                                    name = set1.getString("RoleDisplayName");
+                                }
+                                sb.append(set1.getString("MinecraftUserID"));
+                                sb.append("、");
                             }
+
+
+                            set1.close();
+                            statement1.close();
+                            con1.close();
+
+                            builder.setDescription("" +
+                                    "あなたの情報は以下のとおりですっ！\n" +
+                                    "MinecraftUUID : ||"+ sb.substring(0, sb.length() - 1) +"||\n" +
+                                    "権限 : " + name
+                            );
+                            m.editMessageEmbeds(builder.build()).queue();
+
+                            if (sb.length() > 0){
+                                return;
+                            }
+
+                            builder.setDescription("" +
+                                    "あなたは認証していませんっ！"
+                            );
+
+                            m.editMessageEmbeds(builder.build()).queue();
                             set1.close();
                             statement1.close();
                             con1.close();
