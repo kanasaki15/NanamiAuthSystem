@@ -1,6 +1,7 @@
 package xyz.n7mn.dev.nanamiauthsystem;
 
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.ReadyEvent;
@@ -24,6 +25,7 @@ public class DiscordListener extends ListenerAdapter {
 
     private HashMap<String, TokenData> tokenList;
     private final Plugin plugin;
+    private JDA jda = null;
 
     public DiscordListener(Plugin plugin, HashMap<String, TokenData> tokenList) {
         this.tokenList = tokenList;
@@ -32,6 +34,8 @@ public class DiscordListener extends ListenerAdapter {
 
     @Override
     public void onReady(@NotNull ReadyEvent event) {
+        jda = event.getJDA();
+
         BukkitRunnable bukkitRunnable = new BukkitRunnable() {
             @Override
             public void run() {
@@ -48,137 +52,7 @@ public class DiscordListener extends ListenerAdapter {
                     }
                 }).start();
 
-                EmbedBuilder builder = new EmbedBuilder();
-                builder.setTitle("NanamiAuthSystem Ver "+plugin.getDescription().getVersion());
-                builder.setColor(Color.PINK);
-
-                new Thread(()-> {
-                    TextChannel channel = event.getJDA().getTextChannelById("922501196286140476");
-                    builder.setDescription("同期開始しました。");
-                    builder.setFooter(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
-                    channel.sendMessageEmbeds(builder.build()).queue();
-
-                    try {
-                        Connection con = DriverManager.getConnection("jdbc:mysql://" + plugin.getConfig().getString("MySQLServer") + ":" + plugin.getConfig().getInt("MySQLPort") + "/" + plugin.getConfig().getString("MySQLDatabase") + plugin.getConfig().getString("MySQLOption"), plugin.getConfig().getString("MySQLUsername"), plugin.getConfig().getString("MySQLPassword"));
-                        PreparedStatement statement = con.prepareStatement("SELECT * FROM UserList, RoleList WHERE UserList.RoleUUID = RoleList.UUID and UserList.Active = 1");
-                        ResultSet set = statement.executeQuery();
-                        int i = 0;
-                        while (set.next()) {
-                            i++;
-                            String discordUserID = set.getString("DiscordUserID");
-                            String minecraftId = set.getString("MinecraftUserID");
-                            String displayName = set.getString("RoleDisplayName");
-                            String uuid = set.getString("UUID");
-                            String oldId = set.getString("DiscordRoleID");
-
-                            Member member = channel.getGuild().getMemberById(discordUserID);
-                            if (member == null) {
-                                builder.setColor(Color.YELLOW);
-                                builder.setDescription("" +
-                                        "以下のユーザーの同期をスキップ＆自動無効化しました。\n" +
-                                        "\n" +
-                                        "DiscordID : " + discordUserID + "\n" +
-                                        "Minecraft : https://mine.ly/" + minecraftId + "\n" +
-                                        "理由 : サーバーから抜けているか存在しないユーザー"
-                                );
-                                builder.setFooter(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
-                                channel.sendMessageEmbeds(builder.build()).queue();
-                                PreparedStatement statement1 = con.prepareStatement("UPDATE `UserList` SET `Active`= 0 WHERE `DiscordUserID` = ?");
-                                statement1.setString(1, discordUserID);
-                                statement1.execute();
-                                statement1.close();
-                                continue;
-                            }
-
-                            List<String> roleList = new ArrayList<>();
-                            String permName = null;
-                            String roleId = null;
-
-                            try {
-                                PreparedStatement statement1 = con.prepareStatement("SELECT * FROM RoleList ORDER BY RoleRank DESC");
-                                ResultSet set1 = statement1.executeQuery();
-                                while (set1.next()) {
-                                    roleList.add(set1.getString("DiscordRoleID") + "," + set1.getString("RoleDisplayName"));
-                                }
-                                set1.close();
-                                statement1.close();
-                            } catch (SQLException ex) {
-                                ex.printStackTrace();
-                            }
-
-                            List<Role> list = member.getRoles();
-                            boolean isfound = false;
-                            for (Role role : list) {
-                                if (isfound){
-                                    continue;
-                                }
-                                for (String r : roleList) {
-                                    if (isfound){
-                                        continue;
-                                    }
-                                    String[] split = r.split(",");
-                                    if (role.getId().equals(split[0])) {
-                                        permName = split[1];
-                                        roleId = role.getId();
-                                        isfound = true;
-                                    }
-                                }
-
-                            }
-
-                            if (roleId != null) {
-                                if (!roleId.equals(oldId)) {
-                                    builder.setColor(Color.GREEN);
-                                    builder.setDescription("" +
-                                            "以下の変更を検知しました。\n" +
-                                            "\n" +
-                                            "DiscordName : `" + member.getUser().getName() + "`\n" +
-                                            "DiscordID : `" + discordUserID + "`\n" +
-                                            "Minecraft : https://mine.ly/" + minecraftId + "\n" +
-                                            "\n" +
-                                            "旧階級ロール : `" + displayName + "` (ID:" + oldId + ")\n" +
-                                            "新階級ロール : `" + permName + "` (ID:" + roleId + ")"
-                                    );
-                                    builder.setFooter(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
-                                    channel.sendMessageEmbeds(builder.build()).queue();
-                                    PreparedStatement statement1 = con.prepareStatement("SELECT * FROM RoleList WHERE DiscordRoleID = ?");
-                                    statement1.setString(1, roleId);
-                                    ResultSet set1 = statement1.executeQuery();
-                                    String newUuid = "";
-                                    if (set1.next()){
-                                        newUuid = set1.getString("UUID");
-                                    }
-                                    set1.close();
-                                    statement1.close();
-
-                                    PreparedStatement statement2 = con.prepareStatement("UPDATE `UserList` SET `RoleUUID`= ? WHERE UUID = ?");
-                                    statement2.setString(1, newUuid);
-                                    statement2.setString(2, uuid);
-                                    statement2.execute();
-                                    statement2.close();
-                                }
-                            }
-                        }
-
-                        builder.setDescription("同期終了しました。 (" + i + " 件)");
-                        builder.setFooter(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
-                        builder.setColor(Color.PINK);
-                        channel.sendMessageEmbeds(builder.build()).queue();
-
-                        set.close();
-                        statement.close();
-                        con.close();
-
-                    } catch (SQLException ex) {
-                        ex.printStackTrace();
-                        builder.setColor(Color.RED);
-                        builder.setDescription("" +
-                                "MySQLの接続に失敗 または 処理失敗しました。"
-                        );
-                        builder.setFooter(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
-                        channel.sendMessageEmbeds(builder.build()).queue();
-                    }
-                }).start();
+                sync();
             }
         };
         bukkitRunnable.runTaskTimerAsynchronously(plugin, 0L, 1200L);
@@ -253,10 +127,10 @@ public class DiscordListener extends ListenerAdapter {
             builder.setColor(Color.PINK);
             builder.setDescription("""
                     ※未実装は隠し中。
-                    ||`7m.sync` -- 強制的に同期する(運営用)
-                    `7m.new <DiscordID> <MinecraftID>` -- 強制的に連携する (運営用)||
+                    `7m.sync` -- 強制的に同期する(運営用)
+                    ||`7m.new <DiscordID> <MinecraftID>` -- 強制的に連携する (運営用)||
                     `7m.check` -- 自分の認証情報をチェックする
-                    `7m.opc` -- ななみ鯖運営一覧
+                    `7m.opc` -- ななみ鯖運営人数
                     `7m.help` -- いまのこれ。
                     """
             );
@@ -264,6 +138,49 @@ public class DiscordListener extends ListenerAdapter {
             event.getMessage().replyEmbeds(builder.build()).queue();
 
             return;
+        }
+
+        if (raw.toLowerCase().equals("7m.sync")){
+            builder.setTitle("ななみ鯖　権限同期");
+            builder.setColor(Color.PINK);
+            builder.setDescription("同期中～♪");
+            event.getMessage().replyEmbeds(builder.build()).queue(m -> {
+
+                boolean isOK = false;
+                try {
+                    Connection con = DriverManager.getConnection("jdbc:mysql://" + plugin.getConfig().getString("MySQLServer") + ":" + plugin.getConfig().getInt("MySQLPort") + "/" + plugin.getConfig().getString("MySQLDatabase") + plugin.getConfig().getString("MySQLOption"), plugin.getConfig().getString("MySQLUsername"), plugin.getConfig().getString("MySQLPassword"));
+                    PreparedStatement statement = con.prepareStatement("SELECT DiscordUserID, RoleName, RoleRank FROM UserList, RoleList WHERE UserList.Active = 1 AND UserList.RoleUUID = RoleList.UUID AND (RoleName = 'Admin' or RoleName = 'Moderator') GROUP BY DiscordUserID, RoleName, RoleRank ORDER BY RoleRank DESC ");
+                    ResultSet set = statement.executeQuery();
+                    while (set.next()){
+                        if (set.getString("DiscordUserID").equals(event.getAuthor().getId())){
+                            isOK = true;
+                            break;
+                        }
+                    }
+                    set.close();
+                    statement.close();
+                    con.close();
+
+                    if (!isOK){
+                        builder.setColor(Color.RED);
+                        builder.setDescription("あなたは運営じゃないですよね！！");
+                        m.editMessageEmbeds(builder.build()).queue();
+                        return;
+                    }
+                } catch (Exception e){
+                    e.printStackTrace();
+
+                    builder.setColor(Color.RED);
+                    builder.setDescription("エラーが発生しました！係員を呼んでね！！");
+                    m.editMessageEmbeds(builder.build()).queue();
+                    return;
+
+                }
+
+                sync();
+                builder.setDescription("強制同期しましたっ！");
+                m.editMessageEmbeds(builder.build()).queue();
+            });
         }
 
         if (raw.toLowerCase().equals("7m.opc")){
@@ -446,5 +363,146 @@ public class DiscordListener extends ListenerAdapter {
                 });
             }).start();
         }
+    }
+
+    private void sync(){
+
+        if (jda == null){
+            return;
+        }
+
+
+
+        EmbedBuilder builder = new EmbedBuilder();
+        builder.setTitle("NanamiAuthSystem Ver "+plugin.getDescription().getVersion());
+        builder.setColor(Color.PINK);
+
+        new Thread(()-> {
+            TextChannel channel = jda.getTextChannelById("922501196286140476");
+            builder.setDescription("同期開始しました。");
+            builder.setFooter(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+            channel.sendMessageEmbeds(builder.build()).queue();
+
+            try {
+                Connection con = DriverManager.getConnection("jdbc:mysql://" + plugin.getConfig().getString("MySQLServer") + ":" + plugin.getConfig().getInt("MySQLPort") + "/" + plugin.getConfig().getString("MySQLDatabase") + plugin.getConfig().getString("MySQLOption"), plugin.getConfig().getString("MySQLUsername"), plugin.getConfig().getString("MySQLPassword"));
+                PreparedStatement statement = con.prepareStatement("SELECT * FROM UserList, RoleList WHERE UserList.RoleUUID = RoleList.UUID and UserList.Active = 1");
+                ResultSet set = statement.executeQuery();
+                int i = 0;
+                while (set.next()) {
+                    i++;
+                    String discordUserID = set.getString("DiscordUserID");
+                    String minecraftId = set.getString("MinecraftUserID");
+                    String displayName = set.getString("RoleDisplayName");
+                    String uuid = set.getString("UUID");
+                    String oldId = set.getString("DiscordRoleID");
+
+                    Member member = channel.getGuild().getMemberById(discordUserID);
+                    if (member == null) {
+                        builder.setColor(Color.YELLOW);
+                        builder.setDescription("" +
+                                "以下のユーザーの同期をスキップ＆自動無効化しました。\n" +
+                                "\n" +
+                                "DiscordID : " + discordUserID + "\n" +
+                                "Minecraft : https://mine.ly/" + minecraftId + "\n" +
+                                "理由 : サーバーから抜けているか存在しないユーザー"
+                        );
+                        builder.setFooter(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+                        channel.sendMessageEmbeds(builder.build()).queue();
+                        PreparedStatement statement1 = con.prepareStatement("UPDATE `UserList` SET `Active`= 0 WHERE `DiscordUserID` = ?");
+                        statement1.setString(1, discordUserID);
+                        statement1.execute();
+                        statement1.close();
+                        continue;
+                    }
+
+                    List<String> roleList = new ArrayList<>();
+                    String permName = null;
+                    String roleId = null;
+
+                    try {
+                        PreparedStatement statement1 = con.prepareStatement("SELECT * FROM RoleList ORDER BY RoleRank DESC");
+                        ResultSet set1 = statement1.executeQuery();
+                        while (set1.next()) {
+                            roleList.add(set1.getString("DiscordRoleID") + "," + set1.getString("RoleDisplayName"));
+                        }
+                        set1.close();
+                        statement1.close();
+                    } catch (SQLException ex) {
+                        ex.printStackTrace();
+                    }
+
+                    List<Role> list = member.getRoles();
+                    boolean isfound = false;
+                    for (Role role : list) {
+                        if (isfound){
+                            continue;
+                        }
+                        for (String r : roleList) {
+                            if (isfound){
+                                continue;
+                            }
+                            String[] split = r.split(",");
+                            if (role.getId().equals(split[0])) {
+                                permName = split[1];
+                                roleId = role.getId();
+                                isfound = true;
+                            }
+                        }
+
+                    }
+
+                    if (roleId != null) {
+                        if (!roleId.equals(oldId)) {
+                            builder.setColor(Color.GREEN);
+                            builder.setDescription("" +
+                                    "以下の変更を検知しました。\n" +
+                                    "\n" +
+                                    "DiscordName : `" + member.getUser().getName() + "`\n" +
+                                    "DiscordID : `" + discordUserID + "`\n" +
+                                    "Minecraft : https://mine.ly/" + minecraftId + "\n" +
+                                    "\n" +
+                                    "旧階級ロール : `" + displayName + "` (ID:" + oldId + ")\n" +
+                                    "新階級ロール : `" + permName + "` (ID:" + roleId + ")"
+                            );
+                            builder.setFooter(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+                            channel.sendMessageEmbeds(builder.build()).queue();
+                            PreparedStatement statement1 = con.prepareStatement("SELECT * FROM RoleList WHERE DiscordRoleID = ?");
+                            statement1.setString(1, roleId);
+                            ResultSet set1 = statement1.executeQuery();
+                            String newUuid = "";
+                            if (set1.next()){
+                                newUuid = set1.getString("UUID");
+                            }
+                            set1.close();
+                            statement1.close();
+
+                            PreparedStatement statement2 = con.prepareStatement("UPDATE `UserList` SET `RoleUUID`= ? WHERE UUID = ?");
+                            statement2.setString(1, newUuid);
+                            statement2.setString(2, uuid);
+                            statement2.execute();
+                            statement2.close();
+                        }
+                    }
+                }
+
+                builder.setDescription("同期終了しました。 (" + i + " 件)");
+                builder.setFooter(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+                builder.setColor(Color.PINK);
+                channel.sendMessageEmbeds(builder.build()).queue();
+
+                set.close();
+                statement.close();
+                con.close();
+
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+                builder.setColor(Color.RED);
+                builder.setDescription("" +
+                        "MySQLの接続に失敗 または 処理失敗しました。"
+                );
+                builder.setFooter(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+                channel.sendMessageEmbeds(builder.build()).queue();
+            }
+        }).start();
     }
 }
