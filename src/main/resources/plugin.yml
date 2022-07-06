@@ -1,6 +1,6 @@
 name: NanamiAuthSystem
 version: '${version}'
 main: xyz.n7mn.dev.nanamiauthsystem.NanamiAuthSystem
-api-version: 1.18
+api-version: 1.19
 authors: [ 7mi_chan ]
 description: NanamiAuthSystem

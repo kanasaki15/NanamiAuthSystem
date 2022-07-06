@@ -128,7 +128,9 @@ public class DiscordListener extends ListenerAdapter {
             builder.setDescription("""
                     ※未実装は隠し中。
                     `7m.sync` -- 強制的に同期する(運営用)
-                    ||`7m.new <DiscordID> <MinecraftID>` -- 強制的に連携する (運営用)||
+                    ||`7m.new <DiscordID> <MinecraftID>` -- 強制的に連携する (運営用)
+                    `7m.del <DiscordID>` -- 強制的に削除 (運営用)
+                    ||
                     `7m.check` -- 自分の認証情報をチェックする
                     `7m.opc` -- ななみ鯖運営人数
                     `7m.help` -- いまのこれ。
@@ -391,9 +393,9 @@ public class DiscordListener extends ListenerAdapter {
 
         new Thread(()-> {
             TextChannel channel = jda.getTextChannelById("922501196286140476");
-            builder.setDescription("同期開始しました。");
-            builder.setFooter(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
-            channel.sendMessageEmbeds(builder.build()).queue();
+            //builder.setDescription("同期開始しました。");
+            //builder.setFooter(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+            //channel.sendMessageEmbeds(builder.build()).queue();
 
             try {
                 Connection con = DriverManager.getConnection("jdbc:mysql://" + plugin.getConfig().getString("MySQLServer") + ":" + plugin.getConfig().getInt("MySQLPort") + "/" + plugin.getConfig().getString("MySQLDatabase") + plugin.getConfig().getString("MySQLOption"), plugin.getConfig().getString("MySQLUsername"), plugin.getConfig().getString("MySQLPassword"));
@@ -497,10 +499,10 @@ public class DiscordListener extends ListenerAdapter {
                     }
                 }
 
-                builder.setDescription("同期終了しました。 (" + i + " 件)");
-                builder.setFooter(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
-                builder.setColor(Color.PINK);
-                channel.sendMessageEmbeds(builder.build()).queue();
+                //builder.setDescription("同期終了しました。 (" + i + " 件)");
+                //builder.setFooter(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+                //builder.setColor(Color.PINK);
+                //channel.sendMessageEmbeds(builder.build()).queue();
 
                 set.close();
                 statement.close();

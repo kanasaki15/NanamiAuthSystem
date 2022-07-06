@@ -6,6 +6,7 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import org.bukkit.ChatColor;
@@ -62,7 +63,7 @@ public class MinecraftListener implements Listener {
             );
 
             data.getMessage().editMessageEmbeds(builder.build()).queue(m -> {
-                m.addReaction("\uD83D\uDEAB").queue();
+                m.addReaction(Emoji.fromFormatted("\uD83D\uDEAB")).queue();
             });
             e.getPlayer().sendMessage(Component.text(ChatColor.RED+"最初からやり直してください！"));
             data.getMessage().getGuild().getRolesByName("auth"+data.getUserId(), false).get(0).delete().queue();
@@ -166,7 +167,7 @@ public class MinecraftListener implements Listener {
 
                 builder.setDescription("このMinecraftIDは認証済みです。");
                 data.getMessage().editMessageEmbeds(builder.build()).queue(m -> {
-                    m.addReaction("\uD83D\uDEAB").queue();
+                    m.addReaction(Emoji.fromFormatted("\uD83D\uDEAB")).queue();
                 });
 
                 data.getMessage().getGuild().getRolesByName("auth"+data.getUserId(), false).get(0).delete().queue();
@@ -215,7 +216,7 @@ public class MinecraftListener implements Listener {
 
         data.getMessage().editMessageEmbeds(builder.build()).queue(m -> {
             m.clearReactions().queue();
-            m.addReaction("\u2705").queue();
+            m.addReaction(Emoji.fromFormatted("\u2705")).queue();
         });
 
         data.getMessage().getGuild().getRolesByName("auth"+data.getUserId(), false).get(0).delete().queue();
