@@ -103,7 +103,7 @@ public class DiscordListener extends ListenerAdapter {
                 }
 
                 event.getGuild().createRole().setName(mapName).queue(role -> {
-                    event.getGuild().addRoleToMember(event.getAuthor().getId(), role).queue();
+                    event.getGuild().addRoleToMember(UserSnowflake.fromId(event.getAuthor().getId()), role).queue();
                     event.getGuild().createTextChannel(mapName, event.getGuild().getCategoryById(plugin.getConfig().getString("DiscordVerifyCategoryID"))).syncPermissionOverrides().addRolePermissionOverride(role.getIdLong(), 68672, 0).queue((channel->{
                         channel.sendMessage(event.getAuthor().getAsMention()).setEmbeds(builder.build()).queue();
                         event.getMessage().reply(channel.getAsMention() + " に進んで指示に従ってください。").queue(m -> {
