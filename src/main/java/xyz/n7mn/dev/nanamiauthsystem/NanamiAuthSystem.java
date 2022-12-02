@@ -18,18 +18,12 @@ public final class NanamiAuthSystem extends JavaPlugin {
     public void onEnable() {
         // Plugin startup logic
         saveDefaultConfig();
-        JDA jda = null;
-        try {
-            jda = JDABuilder.createLight(getConfig().getString("DiscordToken"), GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_MEMBERS, GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_VOICE_STATES, GatewayIntent.GUILD_MESSAGE_REACTIONS, GatewayIntent.GUILD_PRESENCES, GatewayIntent.GUILD_EMOJIS_AND_STICKERS)
-                    .addEventListeners(new DiscordListener(this, tokenList))
-                    .enableCache(CacheFlag.EMOJI)
-                    .setMemberCachePolicy(MemberCachePolicy.ALL)
-                    .setActivity(Activity.playing("HelpCommand : 7m.help"))
-                    .build();
-        } catch (LoginException e) {
-            e.printStackTrace();
-            this.onDisable();
-        }
+        JDA jda = JDABuilder.createLight(getConfig().getString("DiscordToken"), GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_MEMBERS, GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_VOICE_STATES, GatewayIntent.GUILD_MESSAGE_REACTIONS, GatewayIntent.GUILD_PRESENCES, GatewayIntent.GUILD_EMOJIS_AND_STICKERS)
+                .addEventListeners(new DiscordListener(this, tokenList))
+                .enableCache(CacheFlag.EMOJI)
+                .setMemberCachePolicy(MemberCachePolicy.ALL)
+                .setActivity(Activity.playing("HelpCommand : 7m.help"))
+                .build();
 
         getServer().getPluginManager().registerEvents(new MinecraftListener(this, tokenList, jda), this);
         getLogger().info(this.getDescription().getName() + " "+this.getDescription().getVersion()+" 起動完了");

@@ -4,8 +4,11 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
-import net.dv8tion.jda.api.events.ReadyEvent;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.events.GenericEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -33,29 +36,31 @@ public class DiscordListener extends ListenerAdapter {
     }
 
     @Override
-    public void onReady(@NotNull ReadyEvent event) {
-        jda = event.getJDA();
+    public void onGenericEvent(GenericEvent event) {
+        if (event instanceof ReadyEvent){
+            jda = event.getJDA();
 
-        BukkitRunnable bukkitRunnable = new BukkitRunnable() {
-            @Override
-            public void run() {
-                plugin.getLogger().info("タイマー起動");
-                new Thread(()->{
-                    List<Guild> guilds = event.getJDA().getGuilds();
-                    for (Guild guild : guilds){
-                        Member member = guild.getMemberById(event.getJDA().getSelfUser().getId());
-                        if (member != null && member.getNickname() == null){
-                            if (member.hasPermission(Permission.NICKNAME_CHANGE)){
-                                member.modifyNickname("[7m.] ななぼっと").queue();
+            BukkitRunnable bukkitRunnable = new BukkitRunnable() {
+                @Override
+                public void run() {
+                    plugin.getLogger().info("タイマー起動");
+                    new Thread(()->{
+                        List<Guild> guilds = event.getJDA().getGuilds();
+                        for (Guild guild : guilds){
+                            Member member = guild.getMemberById(event.getJDA().getSelfUser().getId());
+                            if (member != null && member.getNickname() == null){
+                                if (member.hasPermission(Permission.NICKNAME_CHANGE)){
+                                    member.modifyNickname("[7m.] ななぼっと").queue();
+                                }
                             }
                         }
-                    }
-                }).start();
+                    }).start();
 
-                sync();
-            }
-        };
-        bukkitRunnable.runTaskTimerAsynchronously(plugin, 0L, 1200L);
+                    sync();
+                }
+            };
+            bukkitRunnable.runTaskTimerAsynchronously(plugin, 0L, 1200L);
+        }
     }
 
     @Override

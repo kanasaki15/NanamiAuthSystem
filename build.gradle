@@ -22,9 +22,9 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'org.purpurmc.purpur:purpur-api:1.19-R0.1-SNAPSHOT'
-    implementation 'net.dv8tion:JDA:5.0.0-alpha.13'
-    implementation 'mysql:mysql-connector-java:8.0.29'
+    compileOnly 'org.purpurmc.purpur:purpur-api:1.19.2-R0.1-SNAPSHOT'
+    implementation 'net.dv8tion:JDA:5.0.0-beta.1'
+    implementation 'mysql:mysql-connector-java:8.0.30'
 }
 
 def targetJavaVersion = 17
