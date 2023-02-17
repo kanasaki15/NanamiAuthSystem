@@ -1,5 +1,6 @@
 package xyz.n7mn.dev.nanamiauthsystem;
 
+import com.google.gson.Gson;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.Permission;
@@ -10,11 +11,16 @@ import net.dv8tion.jda.api.events.GenericEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
+import xyz.n7mn.dev.nanamiauthsystem.MojangAPI.UUIDtoProfile;
 
 import java.awt.*;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
@@ -95,11 +101,9 @@ public class DiscordListener extends ListenerAdapter {
                 // チャンネル・ロール作成
                 String mapName = "auth"+event.getAuthor().getId();
                 builder.setDescription("" +
-                        "1.Minecraft Javaでは「`"+plugin.getConfig().getString("LobbyIP")+"`」\n" +
-                        "  Minecraft Bedrockでは「`"+plugin.getConfig().getString("LobbyBEIP")+"`」に入る\n" +
-                        "2.以下の文字列をMinecraftのチャットで入力をする。\n" +
+                        "1. Minecraftを起動し「`"+plugin.getConfig().getString("LobbyIP")+"`」に接続\n" +
+                        "2.「`vy."+token+"`」をMinecraftのチャットで入力をする。(「」は入力しないでください)\n" +
                         "\n" +
-                        "`vy."+token+"`\n" +
                         "(5分経ってしまった場合は最初からやり直してください。)"
                 );
 
@@ -320,7 +324,7 @@ public class DiscordListener extends ListenerAdapter {
                             statement1.setString(1, fromUserId);
                             ResultSet set1 = statement1.executeQuery();
 
-                            StringBuilder sb = new StringBuilder();
+                            List<UUID> MinecraftUUID = new ArrayList<>();
 
 
                             String name = "";
@@ -328,8 +332,7 @@ public class DiscordListener extends ListenerAdapter {
                                 if (set1.isFirst()){
                                     name = set1.getString("RoleDisplayName");
                                 }
-                                sb.append(set1.getString("MinecraftUserID"));
-                                sb.append("、");
+                                MinecraftUUID.add(UUID.fromString(set1.getString("MinecraftUserID")));
                             }
 
 
@@ -337,9 +340,39 @@ public class DiscordListener extends ListenerAdapter {
                             statement1.close();
                             con1.close();
 
+                            StringBuilder sb = new StringBuilder();
+
+                            for (UUID uuid : MinecraftUUID){
+                                String s1 = "https://sessionserver.mojang.com/session/minecraft/profile/" + uuid.toString().replaceAll("-","");
+
+                                if (uuid.toString().startsWith("0000")){
+                                    continue;
+                                }
+
+                                OkHttpClient client = new OkHttpClient();
+
+                                Request request = new Request.Builder()
+                                        .url(s1)
+                                        .build();
+
+                                Response response = null;
+                                try {
+                                    response = client.newCall(request).execute();
+                                    UUIDtoProfile json = new Gson().fromJson(response.body().string(), UUIDtoProfile.class);
+                                    sb.append("`");
+                                    sb.append(json.getName());
+                                    sb.append("` ");
+
+                                    response.close();
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+
+                            }
+
                             builder.setDescription("" +
                                     "あなたの情報は以下のとおりですっ！\n" +
-                                    "MinecraftUUID : ||"+ sb.substring(0, sb.length() - 1) +"||\n" +
+                                    "MinecraftID (Javaのみ) : "+sb.toString()+"\n" +
                                     "権限 : " + name
                             );
                             m.editMessageEmbeds(builder.build()).queue();
