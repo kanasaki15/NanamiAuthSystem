@@ -23,9 +23,11 @@ repositories {
 
 dependencies {
     compileOnly 'org.purpurmc.purpur:purpur-api:1.19.3-R0.1-SNAPSHOT'
-    implementation 'net.dv8tion:JDA:5.0.0-beta.3'
-    implementation 'com.mysql:mysql-connector-j:8.0.32'
-    implementation 'com.squareup.okhttp3:okhttp:4.10.0'
+    implementation 'net.dv8tion:JDA:5.0.0-beta.12'
+    //implementation 'com.mysql:mysql-connector-j:8.0.33'
+    implementation 'org.mariadb.jdbc:mariadb-java-client:3.1.4'
+
+    implementation 'com.squareup.okhttp3:okhttp:4.11.0'
     implementation 'com.google.code.gson:gson:2.10.1'
 }
 

@@ -82,14 +82,15 @@ public class MinecraftListener implements Listener {
 
             while (drivers.hasMoreElements()) {
                 Driver driver = drivers.nextElement();
-                if (driver.equals(new com.mysql.cj.jdbc.Driver())) {
+                //System.out.println(driver);
+                if (driver.equals(new org.mariadb.jdbc.Driver())) {
                     found = true;
                     break;
                 }
             }
 
             if (!found) {
-                DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver());
+                DriverManager.registerDriver(new org.mariadb.jdbc.Driver());
             }
         } catch (SQLException ex){
             ex.printStackTrace();
@@ -98,7 +99,7 @@ public class MinecraftListener implements Listener {
         // 権限レベル順に持ってくる
         List<String> roleList = new ArrayList<>();
         try {
-            Connection con = DriverManager.getConnection("jdbc:mysql://" + plugin.getConfig().getString("MySQLServer") + ":" + plugin.getConfig().getInt("MySQLPort") + "/" + plugin.getConfig().getString("MySQLDatabase") + plugin.getConfig().getString("MySQLOption"), plugin.getConfig().getString("MySQLUsername"), plugin.getConfig().getString("MySQLPassword"));
+            Connection con = DriverManager.getConnection("jdbc:mariadb://" + plugin.getConfig().getString("MySQLServer") + ":" + plugin.getConfig().getInt("MySQLPort") + "/" + plugin.getConfig().getString("MySQLDatabase") + plugin.getConfig().getString("MySQLOption"), plugin.getConfig().getString("MySQLUsername"), plugin.getConfig().getString("MySQLPassword"));
             PreparedStatement statement = con.prepareStatement("SELECT * FROM RoleList ORDER BY RoleRank DESC");
             ResultSet set = statement.executeQuery();
             while (set.next()) {
@@ -156,7 +157,7 @@ public class MinecraftListener implements Listener {
         // MySQLに書き出し
         String finalRoleId = roleId;
         try {
-            Connection con = DriverManager.getConnection("jdbc:mysql://" + plugin.getConfig().getString("MySQLServer") + ":" + plugin.getConfig().getInt("MySQLPort") + "/" + plugin.getConfig().getString("MySQLDatabase") + plugin.getConfig().getString("MySQLOption"), plugin.getConfig().getString("MySQLUsername"), plugin.getConfig().getString("MySQLPassword"));
+            Connection con = DriverManager.getConnection("jdbc:mariadb://" + plugin.getConfig().getString("MySQLServer") + ":" + plugin.getConfig().getInt("MySQLPort") + "/" + plugin.getConfig().getString("MySQLDatabase") + plugin.getConfig().getString("MySQLOption"), plugin.getConfig().getString("MySQLUsername"), plugin.getConfig().getString("MySQLPassword"));
             PreparedStatement statement = con.prepareStatement("SELECT * FROM UserList WHERE MinecraftUserID = ? AND Active = 1");
             statement.setString(1, e.getPlayer().getUniqueId().toString());
             ResultSet set = statement.executeQuery();

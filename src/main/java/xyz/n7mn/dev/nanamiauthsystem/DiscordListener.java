@@ -159,7 +159,7 @@ public class DiscordListener extends ListenerAdapter {
 
                 boolean isOK = false;
                 try {
-                    Connection con = DriverManager.getConnection("jdbc:mysql://" + plugin.getConfig().getString("MySQLServer") + ":" + plugin.getConfig().getInt("MySQLPort") + "/" + plugin.getConfig().getString("MySQLDatabase") + plugin.getConfig().getString("MySQLOption"), plugin.getConfig().getString("MySQLUsername"), plugin.getConfig().getString("MySQLPassword"));
+                    Connection con = DriverManager.getConnection("jdbc:mariadb://" + plugin.getConfig().getString("MySQLServer") + ":" + plugin.getConfig().getInt("MySQLPort") + "/" + plugin.getConfig().getString("MySQLDatabase") + plugin.getConfig().getString("MySQLOption"), plugin.getConfig().getString("MySQLUsername"), plugin.getConfig().getString("MySQLPassword"));
                     PreparedStatement statement = con.prepareStatement("SELECT DiscordUserID, RoleName, RoleRank FROM UserList, RoleList WHERE UserList.Active = 1 AND UserList.RoleUUID = RoleList.UUID AND (RoleName = 'Admin' or RoleName = 'Moderator') GROUP BY DiscordUserID, RoleName, RoleRank ORDER BY RoleRank DESC ");
                     ResultSet set = statement.executeQuery();
                     while (set.next()){
@@ -200,7 +200,7 @@ public class DiscordListener extends ListenerAdapter {
             builder.setDescription("いま数えていますっ！しばらくまってて！");
             event.getMessage().replyEmbeds(builder.build()).queue(m -> {
                 try {
-                    Connection con = DriverManager.getConnection("jdbc:mysql://" + plugin.getConfig().getString("MySQLServer") + ":" + plugin.getConfig().getInt("MySQLPort") + "/" + plugin.getConfig().getString("MySQLDatabase") + plugin.getConfig().getString("MySQLOption"), plugin.getConfig().getString("MySQLUsername"), plugin.getConfig().getString("MySQLPassword"));
+                    Connection con = DriverManager.getConnection("jdbc:mariadb://" + plugin.getConfig().getString("MySQLServer") + ":" + plugin.getConfig().getInt("MySQLPort") + "/" + plugin.getConfig().getString("MySQLDatabase") + plugin.getConfig().getString("MySQLOption"), plugin.getConfig().getString("MySQLUsername"), plugin.getConfig().getString("MySQLPassword"));
                     PreparedStatement statement = con.prepareStatement("SELECT DiscordUserID, RoleName, RoleRank FROM UserList, RoleList WHERE UserList.Active = 1 AND UserList.RoleUUID = RoleList.UUID AND (RoleName = 'Admin' or RoleName = 'Moderator' or RoleName = 'Developer' or RoleName = 'SvModerator') GROUP BY DiscordUserID, RoleName, RoleRank ORDER BY RoleRank DESC ");
                     ResultSet set = statement.executeQuery();
                     int playerCount = 0;
@@ -283,21 +283,23 @@ public class DiscordListener extends ListenerAdapter {
 
                     try {
                         boolean found = false;
+
                         Enumeration<Driver> drivers = DriverManager.getDrivers();
 
                         while (drivers.hasMoreElements()) {
                             Driver driver = drivers.nextElement();
-                            if (driver.equals(new com.mysql.cj.jdbc.Driver())) {
+                            if (driver.equals(new org.mariadb.jdbc.Driver())) {
                                 found = true;
                                 break;
                             }
                         }
 
+
                         if (!found) {
-                            DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver());
+                            DriverManager.registerDriver(new org.mariadb.jdbc.Driver());
                         }
 
-                        Connection con = DriverManager.getConnection("jdbc:mysql://" + plugin.getConfig().getString("MySQLServer") + ":" + plugin.getConfig().getInt("MySQLPort") + "/" + plugin.getConfig().getString("MySQLDatabase") + plugin.getConfig().getString("MySQLOption"), plugin.getConfig().getString("MySQLUsername"), plugin.getConfig().getString("MySQLPassword"));
+                        Connection con = DriverManager.getConnection("jdbc:mariadb://" + plugin.getConfig().getString("MySQLServer") + ":" + plugin.getConfig().getInt("MySQLPort") + "/" + plugin.getConfig().getString("MySQLDatabase") + plugin.getConfig().getString("MySQLOption"), plugin.getConfig().getString("MySQLUsername"), plugin.getConfig().getString("MySQLPassword"));
                         PreparedStatement statement = con.prepareStatement("SELECT RoleName FROM UserList, RoleList WHERE UserList.Active = 1 AND UserList.RoleUUID = RoleList.UUID AND (RoleName = 'Admin' or RoleName = 'Moderator') AND DiscordUserID = ?");
                         statement.setString(1, fromUserId);
                         ResultSet set = statement.executeQuery();
@@ -319,7 +321,7 @@ public class DiscordListener extends ListenerAdapter {
                         }
 
                         if (text.equals("7m.check")){
-                            Connection con1 = DriverManager.getConnection("jdbc:mysql://" + plugin.getConfig().getString("MySQLServer") + ":" + plugin.getConfig().getInt("MySQLPort") + "/" + plugin.getConfig().getString("MySQLDatabase") + plugin.getConfig().getString("MySQLOption"), plugin.getConfig().getString("MySQLUsername"), plugin.getConfig().getString("MySQLPassword"));
+                            Connection con1 = DriverManager.getConnection("jdbc:mariadb://" + plugin.getConfig().getString("MySQLServer") + ":" + plugin.getConfig().getInt("MySQLPort") + "/" + plugin.getConfig().getString("MySQLDatabase") + plugin.getConfig().getString("MySQLOption"), plugin.getConfig().getString("MySQLUsername"), plugin.getConfig().getString("MySQLPassword"));
                             PreparedStatement statement1 = con1.prepareStatement("SELECT MinecraftUserID, RoleDisplayName FROM UserList, RoleList WHERE UserList.Active = 1 AND UserList.RoleUUID = RoleList.UUID AND DiscordUserID = ?");
                             statement1.setString(1, fromUserId);
                             ResultSet set1 = statement1.executeQuery();
@@ -436,7 +438,23 @@ public class DiscordListener extends ListenerAdapter {
             //channel.sendMessageEmbeds(builder.build()).queue();
 
             try {
-                Connection con = DriverManager.getConnection("jdbc:mysql://" + plugin.getConfig().getString("MySQLServer") + ":" + plugin.getConfig().getInt("MySQLPort") + "/" + plugin.getConfig().getString("MySQLDatabase") + plugin.getConfig().getString("MySQLOption"), plugin.getConfig().getString("MySQLUsername"), plugin.getConfig().getString("MySQLPassword"));
+                Enumeration<Driver> drivers = DriverManager.getDrivers();
+
+                boolean found = false;
+                while (drivers.hasMoreElements()) {
+                    Driver driver = drivers.nextElement();
+                    if (driver.equals(new org.mariadb.jdbc.Driver())) {
+                        found = true;
+                        break;
+                    }
+                }
+
+
+                if (!found) {
+                    DriverManager.registerDriver(new org.mariadb.jdbc.Driver());
+                }
+
+                Connection con = DriverManager.getConnection("jdbc:mariadb://" + plugin.getConfig().getString("MySQLServer") + ":" + plugin.getConfig().getInt("MySQLPort") + "/" + plugin.getConfig().getString("MySQLDatabase") + plugin.getConfig().getString("MySQLOption"), plugin.getConfig().getString("MySQLUsername"), plugin.getConfig().getString("MySQLPassword"));
                 PreparedStatement statement = con.prepareStatement("SELECT * FROM UserList, RoleList WHERE UserList.RoleUUID = RoleList.UUID and UserList.Active = 1");
                 ResultSet set = statement.executeQuery();
                 int i = 0;
